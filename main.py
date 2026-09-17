@@ -3,32 +3,22 @@ import numpy as np
 
 #PHYSICS
 trajectory = []
-mass = np.random.uniform(0.5, 2.0, 500)
+num_stars = 500
+mass = np.random.uniform(0.5, 2.0, num_stars * 2)
+total_mass = np.sum(mass)
+orbit_radius = 8.0
 G = 1.0 #G-Force aka gravity, not real world.
-galaxy_mass = 1000.0
-velocity = np.array([0.0, np.sqrt(G*galaxy_mass / 5), 0.0])
+galaxy_mass = total_mass
+velocity = np.array([0.0, np.sqrt(G*galaxy_mass / orbit_radius), 0.0])
 particle_mass = 1.0
-position = np.array([5.0, 0.0, 0.0])
-for _ in range(1000):
-    distance = np.linalg.norm(position)
-    force = (G * galaxy_mass) / distance**2
-    direction = -position / distance
-    force_vector = force * direction
-    acceleration = force_vector / particle_mass
-    dt = 0.01 #Interval between calculations
-    velocity = velocity + acceleration * dt #New velocity equals old velocity plus acceleration times interval
-    position = position + velocity * dt #New position equals old position plus new velocity times interval
-    trajectory.append(position.copy())
-trajectory = np.array(trajectory)
-trajectory_x = trajectory[:,0]
-trajectory_y = trajectory[:,1]
-trajectory_z = trajectory[:,2]
+position = np.array([orbit_radius, 0.0, 0.0])
 
-brightness = np.random.uniform(0.2, 1.0, 500)
-brightness2 = np.random.uniform(0.2, 1.0, 500)
 
-r = np.random.exponential(5,500)
-angle = r * 0.5 + np.random.normal(0,0.15,500)
+brightness = np.random.uniform(0.2, 1.0, num_stars)
+brightness2 = np.random.uniform(0.2, 1.0, num_stars)
+
+r = np.random.exponential(5,num_stars)
+angle = r * 0.5 + np.random.normal(0,0.15,num_stars)
 
 
 center_r = np.random.exponential(0.7,1000)
@@ -46,6 +36,29 @@ center_x = center_r * np.cos(center_angle)
 center_y = center_r * np.sin(center_angle)
 center_z = np.random.normal(0, 0.15, 1000)
 
+
+star_positions = np.column_stack((x,y,z))
+star_positions2 = np.column_stack((x2,y2,z2))
+star_positions = np.vstack((star_positions, star_positions2))
+for _ in range(10000):
+    distance = np.linalg.norm(position)
+    distances = np.linalg.norm(star_positions - position, axis=1) + 0.1
+    directions = (star_positions - position) / distances[:, np.newaxis]
+    force = (G * galaxy_mass) / distance**2
+    direction = -position / distance
+    force_vector = force * direction
+    forces = (G * mass[:, np.newaxis]) / distances[:, np.newaxis]**2 * directions
+    net_force = np.sum(forces, axis=0)
+    acceleration = net_force / particle_mass
+    dt = 0.001 #Interval between calculations
+    velocity = velocity + acceleration * dt #New velocity equals old velocity plus acceleration times interval
+    position = position + velocity * dt #New position equals old position plus new velocity times interval
+    trajectory.append(position.copy())
+trajectory = np.array(trajectory)
+trajectory_x = trajectory[:,0]
+trajectory_y = trajectory[:,1]
+trajectory_z = trajectory[:,2]
+
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
@@ -54,7 +67,7 @@ ax = fig.add_subplot(111,projection="3d")
 ax.scatter(x,y,z,s=2, alpha=brightness)
 ax.scatter(x2,y2,z2,s=2, alpha=brightness2)
 ax.view_init(elev=20, azim=45)
-#ax.view_init(elev=90, azim=0)
+#ax.view_init(elev=90, azim=0) Incase I want to see it from above
 ax.scatter(center_x, center_y, center_z, s=4, alpha=0.4)
 ax.scatter(center_x, center_y, center_z, s=12, alpha=0.05)
 ax.plot(trajectory_x, trajectory_y, trajectory_z) #Able to see how it moved under the influence of gravity
